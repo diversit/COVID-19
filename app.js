@@ -36,7 +36,7 @@ const influxdb = new influx.InfluxDB({
 });
 
 
-const statType = ['Confirmed', 'Deaths'];
+const statType = ['Confirmed', 'Deaths', 'Recovered'];
 
 let covidConfirmed;
 let covidDeaths;
@@ -45,6 +45,7 @@ let covidRecovered;
 function getCovidData(item) {
     const axios = require ('axios').default;
     const url = "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_" + item.toLowerCase() + "_global.csv";
+    console.log(`Getting data from: ${url}`);
     return axios.get(url);
 }
 
@@ -75,7 +76,6 @@ async function getCovid() {
     }
 
 }
-
 
 function convertHeader(convDaten) {
 
@@ -111,34 +111,48 @@ function covidDB() {
     const anzahlDatenSatz = Object.keys(covidConfirmed).length;
     const anzahlEintrag = Object.keys(Object.keys(covidConfirmed[0])).length;
 
+    console.log(`Writing to Influx ${influxDb}:${influxPort}/${influxDb}`);
+    console.log(`rows:${anzahlDatenSatz}, koloms:${anzahlEintrag}`)
+
     for (let i = 0; i < anzahlDatenSatz - 1; i++) {
 
-        const zeilenConfirmed = Object.entries(covidConfirmed[i]);
-        const zeilenDeaths = Object.entries(covidDeaths[i]);
+        const linesConfirmed = Object.entries(covidConfirmed[i]);
 
-        let state = zeilenConfirmed[0][1];
-        let country = zeilenConfirmed[1][1];
-        let lat = zeilenConfirmed[2][1];
-        let long = zeilenConfirmed[3][1];
+        let state = linesConfirmed[0][1]; 
+        let country = linesConfirmed[1][1];
+        let lat = linesConfirmed[2][1];
+        let long = linesConfirmed[3][1];
+
+        // To be sure also apply filter to select Deaths record for state/country
+        // just in case the data source is not in same order as Confirmed data source.
+        const deathsFound = covidDeaths.find(row => state === row['Province/State'] && country === row['Country/Region'])
+        const linesDeaths = Object.entries(deathsFound);
+
+        // Recovered does not contain the same (number of) rows as the Confirmed and Deaths data sources.
+        // So filter for same state/country as current Confirmed record
+        const recoveredFound = covidRecovered.find(row => state === row['Province/State'] && country === row['Country/Region'])
+        let linesRecovered = recoveredFound ? Object.entries(recoveredFound) : undefined
 
         if (state == null) {
             state = "N/A";
         }
 
         for (let j = 4; j < anzahlEintrag; j++) {
-            let zeileConfirmed = Object.values(zeilenConfirmed[j])
-            let zeileDeaths = Object.values(zeilenDeaths[j])
+            let lineConfirmed = Object.values(linesConfirmed[j])
+            let lineDeaths = Object.values(linesDeaths[j])
+            let lineRecovered = linesRecovered ? Object.values(linesRecovered[j]) : undefined
 
-            let timestemp = zeileConfirmed[0];
-            let confirmed = zeileConfirmed[1];
-            let deaths = zeileDeaths[1];
+            let timestamp = lineConfirmed[0];
+            let confirmed = lineConfirmed[1];
+            let deaths = lineDeaths[1];
+            let recovered = lineRecovered ? lineRecovered[1] : undefined;
 
             if (confirmed == undefined) {
-                confirmed = Object.values(zeilenConfirmed[j - 1])[1];
+                confirmed = Object.values(linesConfirmed[j - 1])[1];
             }
 
             if (deaths == undefined) {
-                deaths = Object.values(zeilenDeaths[j - 1])[1];
+                deaths = Object.values(linesDeaths[j - 1])[1];
             }
 
             series.push(
@@ -153,11 +167,10 @@ function covidDB() {
                     fields: {
                         Confirmed: confirmed,
                         Deaths: deaths,
+                        Recovered: recovered
                     },
-                    timestamp: timestemp
+                    timestamp: timestamp
                 });
-
-
 
         }
 
@@ -180,6 +193,7 @@ async function Covid() {
     const result = await getCovid();
     covidDB()
 
+    console.log(`Done`);
 }
 
 
