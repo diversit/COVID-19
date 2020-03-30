@@ -1,11 +1,8 @@
-FROM ubuntu:18.04
-
-RUN apt-get update && \
-  apt-get install git npm nodejs -y
+FROM node:11
 
 WORKDIR /work
 
-ADD . /work/
-RUN npm install papaparse influx axios
+COPY . /work/
+RUN npm install
 
 ENTRYPOINT ["node", "/work/app.js"]
