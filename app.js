@@ -2,18 +2,16 @@ const papa = require('papaparse');
 const influx = require('influx');
 const axios = require('axios');
 const HttpsProxyAgent = require('https-proxy-agent');
-const axiosDefaultConfig = {
-    proxy: false,
-    httpsAgent: new HttpsProxyAgent('http://XXXX:XXXX@XXXX:XXXX')
-};
 
 // Get INFLUX_HOST environment variable
 const influxhost = process.env.INFLUX_HOST;
+const influxPort = process.env.INFLUX_PORT;
+const influxDb = 'covid19';
 
 const influxdb = new influx.InfluxDB({
     host: influxhost,
-    port: 8086,
-    database: 'covid19',
+    port: influxPort,
+    database: influxDb,
     pool: {
         maxRetries: 5,
         requestTimeout: 600000,
@@ -45,7 +43,7 @@ let covidDeaths;
 let covidRecovered;
 
 function getCovidData(item) {
-    const axios = require ('axios').create(axiosDefaultConfig);
+    const axios = require ('axios').default;
     const url = "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_" + item.toLowerCase() + "_global.csv";
     return axios.get(url);
 }
@@ -165,19 +163,17 @@ function covidDB() {
 
     };
 
-    influxdb.writeMeasurement('Corona', series, { database: 'covid19', precision: 'ms' }).catch(error => {
+    influxdb.writeMeasurement('Corona', series, { database: influxDb, precision: 'ms' }).catch(error => {
         console.error("Error :", error, "Stack:", error.stack)
     });
-
-
 }
 
 
 async function Covid() {
 
     influxdb.getDatabaseNames().then(names => {
-        if (!names.includes('covid19')) {
-            influxdb.createDatabase('covid19');
+        if (!names.includes(influxDb)) {
+            influxdb.createDatabase(influxDb);
         }
     })
 
