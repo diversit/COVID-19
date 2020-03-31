@@ -16,6 +16,10 @@ Use `node` v11.x. (>v11.x does not work)
 Default uses InfluxDB on `localhost:8086`.  
 Use environment variables `INFLUX_HOST` and `INFLUX_PORT` to customize the url.
 
+## Docker
+
+Available via DockerHub: [https://hub.docker.com/repository/docker/diversit/covid19-load-influxdb](https://hub.docker.com/repository/docker/diversit/covid19-load-influxdb)
+
 ## Dashboard
 
 Once loaded install [this](https://grafana.com/grafana/dashboards/11896) Grafana dashboard (id 11896).
