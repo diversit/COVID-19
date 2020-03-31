@@ -1,0 +1,25 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: covid19import
+spec:
+  schedule: 6 1,6,13,19 * * *
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    metadata:
+      name: covid19import
+    spec:
+      template:
+        metadata:
+          name: covid19import
+        spec:
+          containers:
+          - image: diversit/covid19-load-influxdb
+            name: covid19import
+            env:
+              - name: INFLUX_HOST
+                value: "192.168.10.8"
+              - name: INFLUX_PORT
+                value: "8086"
+          restartPolicy: Never
+
