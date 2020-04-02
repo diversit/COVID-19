@@ -111,7 +111,7 @@ function covidDB() {
     const anzahlDatenSatz = Object.keys(covidConfirmed).length;
     const anzahlEintrag = Object.keys(Object.keys(covidConfirmed[0])).length;
 
-    console.log(`Writing to Influx ${influxDb}:${influxPort}/${influxDb}`);
+    console.log(`Writing to Influx ${influxhost}:${influxPort}/${influxDb}`);
     console.log(`rows:${anzahlDatenSatz}, koloms:${anzahlEintrag}`)
 
     for (let i = 0; i < anzahlDatenSatz - 1; i++) {
